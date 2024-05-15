@@ -79,44 +79,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
         s3.getObject({ Bucket: BUCKET_NAME, Key: FILE_NAME }, function(err, data) {
             if (err) {
-                console.log('Error getting object:', err);
-                return;
-            }
+                if (err.code === 'NoSuchKey') {
+                    let workbook = XLSX.utils.book_new();
+                    workbook.SheetNames.push("Sheet1");
+                    const worksheet_data = [["ID", "Name", "Email"]];
+                    const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
+                    workbook.Sheets["Sheet1"] = worksheet;
 
-            let workbook;
-            if (!data || !data.Body) {
-                workbook = XLSX.utils.book_new();
-                workbook.SheetNames.push("Sheet1");
-                const worksheet_data = [["ID", "Name", "Email"]];
-                const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
-                workbook.Sheets["Sheet1"] = worksheet;
+                    const newRow = [1, name, email];
+                    XLSX.utils.sheet_add_aoa(worksheet, [newRow], { origin: -1 });
+
+                    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+                    s3.putObject({
+                        Bucket: BUCKET_NAME,
+                        Key: FILE_NAME,
+                        Body: wbout,
+                        ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    }, function(err, data) {
+                        if (err) {
+                            console.log('Error putting object:', err);
+                            alert('Failed to submit data.');
+                        } else {
+                            console.log('Object put successfully:', data);
+                            alert('Data submitted successfully!');
+                        }
+                    });
+                } else {
+                    console.log('Error getting object:', err);
+                    alert('Failed to get data.');
+                }
             } else {
                 const arrayBuffer = data.Body.buffer;
-                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                let workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+                const worksheet = workbook.Sheets["Sheet1"];
+                const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : { e: { r: 0 } };
+                const maxRow = range.e.r + 1;
+                const newRow = [maxRow + 1, name, email];
+                XLSX.utils.sheet_add_aoa(worksheet, [newRow], { origin: -1 });
+
+                const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+                s3.putObject({
+                    Bucket: BUCKET_NAME,
+                    Key: FILE_NAME,
+                    Body: wbout,
+                    ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                }, function(err, data) {
+                    if (err) {
+                        console.log('Error putting object:', err);
+                        alert('Failed to submit data.');
+                    } else {
+                        console.log('Object put successfully:', data);
+                        alert('Data submitted successfully!');
+                    }
+                });
             }
-
-            const worksheet = workbook.Sheets["Sheet1"];
-            const range = XLSX.utils.decode_range(worksheet['!ref']);
-            const maxRow = range.e.r + 1;
-            const newRow = [maxRow, name, email];
-            XLSX.utils.sheet_add_aoa(worksheet, [newRow], { origin: -1 });
-
-            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-            s3.putObject({
-                Bucket: BUCKET_NAME,
-                Key: FILE_NAME,
-                Body: wbout,
-                ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            }, function(err, data) {
-                if (err) {
-                    console.log('Error putting object:', err);
-                    alert('Failed to submit data.');
-                } else {
-                    console.log('Object put successfully:', data);
-                    alert('Data submitted successfully!');
-                }
-            });
         });
     });
 });
