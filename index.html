@@ -1,38 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Input to XLSX</title>
+    <title>User Input Form</title>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.283.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.4/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
-    <h1>Enter Your Information</h1>
+    <h1>Submit Your Details</h1>
     <form id="userForm">
         <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+        <input type="text" id="name" name="name" required><br>
         <label for="email">Email:</label><br>
         <input type="email" id="email" name="email" required><br><br>
-        <button type="submit">Submit</button>
+        <input type="submit" value="Submit">
     </form>
-
-    <script>
-        document.getElementById('userForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const response = await fetch('http://localhost:3000/submit', {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: formData.get('name'),
-                    email: formData.get('email')
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (response.ok) {
-                alert('Data saved successfully!');
-            } else {
-                alert('Failed to save data.');
-            }
-        });
-    </script>
 </body>
 </html>
