@@ -15,6 +15,12 @@ document.getElementById('userForm').addEventListener('submit', function(event) {
     const email = document.getElementById('email').value;
 
     s3.getObject({ Bucket: BUCKET_NAME, Key: FILE_NAME }, function(err, data) {
+        if (err) {
+            console.log('Error getting object:', err);
+        } else {
+            console.log('Object retrieved:', data);
+        }
+
         let workbook;
         if (err && err.code === 'NoSuchKey') {
             workbook = XLSX.utils.book_new();
@@ -43,9 +49,10 @@ document.getElementById('userForm').addEventListener('submit', function(event) {
             ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         }, function(err, data) {
             if (err) {
-                console.log(err);
+                console.log('Error putting object:', err);
                 alert('Failed to submit data.');
             } else {
+                console.log('Object put successfully:', data);
                 alert('Data submitted successfully!');
             }
         });
